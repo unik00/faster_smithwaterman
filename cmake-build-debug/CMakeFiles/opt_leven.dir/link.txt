@@ -1,1 +1,0 @@
-/usr/bin/c++  -g   CMakeFiles/opt_leven.dir/main.cpp.o  -o opt_leven 

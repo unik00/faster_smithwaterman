@@ -4,13 +4,14 @@
 #include <cassert>
 #include <unistd.h>
 
-#include "vn_lang_tool.hpp"
+#include "lib/vn_lang_tool.hpp"
 
 using namespace std;
 
 const int N = 1005;
 int dp[N][N];
-
+double new_duration = 0;
+double old_duration = 0;
 
 int max(const int &a, const int &b){
     return a > b ? a : b;
@@ -56,16 +57,19 @@ int attempt(string sa, string sb){
     int ans = 0;
     int cur_w = 0, m = 0;
 
-    for(auto i : _a){
-        if (in_b[i]) {
+    for(auto c : _a){
+        if (c == ' ' && a[m] == ' ') continue;
+        if (in_b[c]) {
             w[++m] = cur_w;
-            a[m] = i;
+            a[m] = c;
             cur_w = 0;
         }
         else {
             cur_w++;
         }
     }
+//    for (int i = 1; i <m; i++) cout <<a[i]; cout<<endl;
+//    cout << b << endl;
 
     for(int i = 1; i <= m; i++){
         for(int j = 1; j < int(b.size()); j++){
@@ -105,6 +109,8 @@ int attempt(string sa, string sb){
 }
 
 void test_single(string a, string b){
+    a = VnLangTool::lower_root(a);
+    b = VnLangTool::lower_root(b);
 
 
     clock_t start;
@@ -113,20 +119,22 @@ void test_single(string a, string b){
     start = clock();
     int old_ans = old_leven(a, b);
     cout << old_ans << endl;
-    double old_duration = ( clock() - start ) / (double) CLOCKS_PER_SEC;
-    cout<< "Old time: " << old_duration <<'\n';
+    double s_old_duration = ( clock() - start ) / (double) CLOCKS_PER_SEC;
+    old_duration += s_old_duration;
+    cout<< "Old time: " << s_old_duration <<'\n';
 
 
     start = clock();
     int new_ans =attempt(a, b);
     cout << new_ans << endl;
-    double new_duration = ( clock() - start ) / (double) CLOCKS_PER_SEC;
-    cout<< "Attempt time: "<< new_duration <<'\n';
+    double s_new_duration = ( clock() - start ) / (double) CLOCKS_PER_SEC;
+    new_duration += s_new_duration;
+    cout<< "Attempt time: "<< s_new_duration <<'\n';
 
 
 
 
-    cout << "Percentage: " << new_duration / old_duration * 100 <<  "%" << endl;
+//    cout << "Percentage: " << new_duration / old_duration * 100 <<  "%" << endl;
     cout << "**********************\n";
     assert(new_ans == old_ans);
 }
@@ -197,6 +205,11 @@ int main() {
     a = "công ty showa gloves 152 2 tổ 11 khu phố 1 b an phú thuận an bình dương bình dương";
     b = "^an phú|^ap";
     test_single(a, b);
+
+    a = "cong ty showa gloves 152 2 to 11 khu pho 1 b an phu thuan an binh duong binh duong";
+    b = "an phu|ap";
+    test_single(a, b);
+    cout << "Percentage: " << new_duration / old_duration * 100 <<  "%" << endl;
 
     //
 //    ifstream fin("test_1.txt");

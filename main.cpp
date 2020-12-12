@@ -33,9 +33,21 @@ int old_leven(string sa, string sb){
     int ans = 0;
      for(int i = 1; i < int(a.size()); i++){
         for(int j = 1; j < int(b.size()); j++){
-            dp[i][j] = max(dp[i][j-1], dp[i-1][j]) - 1;
-            dp[i][j] = max(dp[i][j], dp[i-1][j-1] - 1);
-            if (a[i] == b[j]) dp[i][j] = max(dp[i][j], dp[i-1][j-1] + 1);
+            if (dp[i][j-1] > dp[i-1][j]){
+                dp[i][j] = dp[i][j - 1] - 1;
+//                cout << i << " " << j << " " << i << " "<< j - 1 << endl;
+            }
+            else dp[i][j] = dp[i - 1][j] - 1;
+            if (dp[i][j] < dp[i-1][j-1]-1) {
+                dp[i][j] = dp[i - 1][j - 1] - 1;
+//                cout << i << " " << j << " " << i-1 << " "<< j - 1 << endl;
+
+            }
+            if (a[i] == b[j] && dp[i][j] <dp[i-1][j-1] + 1){
+                dp[i][j] = dp[i-1][j-1] + 1;
+//                cout << i << " " << j << " " << i-1 << " "<< j - 1 << endl;
+
+            }
             dp[i][j] = max(dp[i][j], 0);
 //            cout << i << " " << j << " " << dp[i][j] << endl;
             ans = max(ans, dp[i][j]);
@@ -65,43 +77,38 @@ int attempt(string sa, string sb){
     }
     int ans = 0;
     int cur_w = 0, m = 0;
-
-    for(auto c : _a){
+    for(int i = 0; i < (int)_a.size(); i++){
 //        if (c == ' ' && a[m] == ' ') continue;
-        if (in_b[c]) {
+        if (in_b[_a[i]]/* || i == (int)_a.size() - 1 */) {
             w[++m] = cur_w;
-            a[m] = c;
+            a[m] = _a[i];
             cur_w = 0;
         }
         else {
             cur_w++;
         }
     }
-//    for (int i = 1; i <=m; i++) cout <<a[i]; cout<<endl;
+//    cout << "a: "; for (int i = 1; i <=m; i++) cout <<a[i]; cout<<endl;
 //    for (int i = 1; i <=m; i++) cout <<w[i] << " "; cout<<endl;
-//    cout << b << endl;
+//    cout << "b: " << b << endl;
 
     for(int i = 1; i <= m; i++){
         for(int j = 1; j < int(b.size()); j++){
-            if (dp[i][j - 1] - 1 > dp[i-1][j] - 1 - w[i]) {
+            if (dp[i][j - 1] - 1 > dp[i-1][j] - w[i] - 1) {
                 dp[i][j] = dp[i][j - 1] - 1;
             }
             else {
-                dp[i][j] = dp[i - 1][j] - 1 - w[i];
+                dp[i][j] = dp[i - 1][j] - w[i] - 1;
             }
 
-            if (dp[i][j] < dp[i-1][j-1] - 1 - w[i]){
-                dp[i][j] = dp[i-1][j-1] - 1 - w[i];
-            }
-
-            if (a[i] == b[j]) {
-                // we need to query max(dp[i-1][j-1-w[i] to j-1]), can we do this faster?
-                for(int l = 0, min_ = min(w[i], j - 1); l <= min_; l++) {
-                    if (dp[i][j] < max(0, dp[i - 1][j - 1 - l] - w[i]) + 1){
-                        dp[i][j] = max(0, dp[i - 1][j - 1 - l] - w[i]) + 1;
-                    }
+            // we need to query max(dp[i-1][j-1-w[i] to j-1]), can we do this faster?
+            for(int l = 0, min_ = min(w[i], j - 1); l <= min_; l++) {
+                int tw = (a[i] == b[j]) ? 1 : -1;
+                if (dp[i][j] < max(0, dp[i - 1][j - 1 - l] - w[i]) + tw){
+                    dp[i][j] = max(0, dp[i - 1][j - 1 - l] - w[i]) + tw;
                 }
             }
+
             if (dp[i][j] < 0) dp[i][j] = 0;
             if (ans < dp[i][j]) ans = dp[i][j];
         }
@@ -127,7 +134,7 @@ string gen_random(const int len) {
 
     string tmp_s;
     static const char alphanum[] =
-            "abcdeqphngo";
+            "abc";
 
 //    srand( (unsigned) time(NULL) * getpid());
 
@@ -152,27 +159,47 @@ int main() {
         getline(fin, b);
         a = VnLangTool::lower_root(a);
         b = VnLangTool::lower_root(b);
-        res2.push_back(attempt(a, b));
-//        res1.push_back(old_leven(a, b));
-
-
+        res1.push_back(old_leven(a, b));
     }
     fin.close();
-/*
+
     fin.open("test_1.txt");
     while (getline(fin, a)){
         getline(fin, b);
         a = VnLangTool::lower_root(a);
         b = VnLangTool::lower_root(b);
-        res1.push_back(old_leven(a, b));
+        res2.push_back(attempt(a, b));
     }
 
     assert(res1.size() == res2.size());
     for(int i = 0 ; i < (int)res1.size(); i++)
         assert(res1[i] == res2[i]);
-//    cout << "Percentage: " << new_duration / old_duration * 100 <<  "%" << endl;
+    cout << "Percentage: " << new_duration / old_duration * 100 <<  "%" << endl;
+
+
+//    for(int i = 0; i < int(1e6); i++){
+//        a = gen_random(7);
+//        b = gen_random(7);
+//        cout << a << endl << b << endl;
+//        int ans1= attempt(a, b);
+//        int ans2 =  old_leven(a, b);
+//        cout << "???????" << ans1 << " " <<ans2<< endl;
+//        assert(ans1==ans2);
+//    }
+//
+/*
+    a = "ccdbdaecc";
+    b = "ccdcaaec";
+//    a="127 hiep binh hiep binh chanh thu duc hcm hiep binh chanh go vap ho chi minh ho chi minh";
+//    b="khu dan cu hiep binh chanh|kdc hiep binh chanh";
+    a = "1023 2 chung cu ngoc lam le van luong phuoc kieng phuoc kien nha be ho chi minh ho chi minh";
+    b = "toa nha chung cu goldora|chung cu goldora 26 le van luong|cc goldora 26 le van luong|chung cu goldora 26 le van luong";
+    cout << a << endl << b << endl;
+    int ans1= attempt(a, b);
+    int ans2 =  old_leven(a, b);
+    cout << "???????" << ans1 << " " <<ans2<< endl;
+    assert(ans1==ans2);
 */
     cout << new_duration << " " << old_duration << endl;
-
     return 0;
 }

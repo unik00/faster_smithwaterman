@@ -64,6 +64,19 @@ int w[N];
 bool in_b[int(1e6)];
 char a[N];
 
+inline void upd(int *f, int x,const int &k){
+    for(; x; x -= x & -x) if (f[x] < k) f[x] = k;
+}
+
+int query(const int *f, const int &n, int x){
+    int ans=0;
+    for(; x <= n; x += x & -x) {
+//        cout << x << " " << n << endl;
+        if (ans<f[x]) ans=f[x];
+    }
+    return ans;
+}
+
 int attempt(string sa, string sb){
     clock_t start;
     double duration;
@@ -91,8 +104,10 @@ int attempt(string sa, string sb){
 //    cout << "a: "; for (int i = 1; i <=m; i++) cout <<a[i]; cout<<endl;
 //    for (int i = 1; i <=m; i++) cout <<w[i] << " "; cout<<endl;
 //    cout << "b: " << b << endl;
+    int fnw[(int)b.size()];
 
     for(int i = 1; i <= m; i++){
+        memset(fnw, 0, sizeof(fnw));
         for(int j = 1; j < int(b.size()); j++){
             if (dp[i][j - 1] - 1 > dp[i-1][j] - w[i] - 1) {
                 dp[i][j] = dp[i][j - 1] - 1;
@@ -101,16 +116,23 @@ int attempt(string sa, string sb){
                 dp[i][j] = dp[i - 1][j] - w[i] - 1;
             }
 
-            // we need to query max(dp[i-1][j-1-w[i] to j-1]), can we do this faster?
-            for(int l = 0, min_ = min(w[i], j - 1); l <= min_; l++) {
-                int tw = (a[i] == b[j]) ? 1 : -1;
-                if (dp[i][j] < max(0, dp[i - 1][j - 1 - l] - w[i]) + tw){
-                    dp[i][j] = max(0, dp[i - 1][j - 1 - l] - w[i]) + tw;
-                }
+            int cur = query(fnw, (int)b.size() - 1, max(1, j - 1 - w[i]));
+            int tw = (a[i] == b[j]) ? 1 : -1;
+            if (dp[i][j] < max(0, cur - w[i]) + tw) {
+                dp[i][j] = max(0, cur - w[i]) + tw;
             }
+
+            // we need to query max(dp[i-1][j-1-w[i] to j-1]), can we do this faster?
+//            for(int l = 0, min_ = min(w[i], j - 1); l <= min_; l++) {
+//                int tw = (a[i] == b[j]) ? 1 : -1;
+//                if (dp[i][j] < max(0, dp[i - 1][j - 1 - l] - w[i]) + tw){
+//                    dp[i][j] = max(0, dp[i - 1][j - 1 - l] - w[i]) + tw;
+//                }
+//            }
 
             if (dp[i][j] < 0) dp[i][j] = 0;
             if (ans < dp[i][j]) ans = dp[i][j];
+            upd(fnw, j, dp[i-1][j]);
         }
     }
 
@@ -159,7 +181,13 @@ int main() {
         getline(fin, b);
         a = VnLangTool::lower_root(a);
         b = VnLangTool::lower_root(b);
+//        int x = old_leven(a, b);
+//        int y = attempt(a, b);
+//        cout << a << endl << b << endl;
+//        cout << x << " " << y << endl;
+//        assert(x == y);
         res1.push_back(old_leven(a, b));
+
     }
     fin.close();
 
@@ -169,6 +197,7 @@ int main() {
         a = VnLangTool::lower_root(a);
         b = VnLangTool::lower_root(b);
         res2.push_back(attempt(a, b));
+
     }
 
     assert(res1.size() == res2.size());

@@ -218,7 +218,7 @@ string gen_random(const int len) {
 
 }
 
-int main() {
+void full_test(){
     VnLangTool::init("", true);
     string a, b;
 
@@ -237,7 +237,7 @@ int main() {
 //        cout << x << " " << y << endl;
 //        assert(x == y);
         auto bs = VnLangTool::split_str(b, "|");
-        for(auto s: bs) res2.push_back(attempt(a, s));
+        for(auto s: bs) res1.push_back(old_leven(a, s));
 
     }
     fin.close();
@@ -249,10 +249,8 @@ int main() {
 //        a = VnLangTool::lower_root(a);
 //        b = VnLangTool::lower_root(b);
         auto bs = VnLangTool::split_str(b, "|");
-        for(auto s: bs) {
-//            cout << a << endl << s << endl;
-            res1.push_back(old_leven(a, s));
-        }
+        for(auto s: bs) res2.push_back(attempt(a, s));
+
     }
 
     assert(res1.size() == res2.size());
@@ -284,5 +282,11 @@ int main() {
     assert(ans1==ans2);
 */
     cout << new_duration << " " << old_duration << endl;
+}
+int main() {
+//    full_test();
+    string a = "thach loi thanh xuan soc son ha noi";
+    string b = "thach loi thanh xuan soc son";
+
     return 0;
 }

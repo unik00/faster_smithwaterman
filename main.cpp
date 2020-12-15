@@ -107,30 +107,16 @@ int w[N];
 bool in_b[int(1e6)];
 char a[N];
 
-inline void upd(int *f, int x,const int &k){
-    for(; x; x -= x & -x) if (f[x] < k) f[x] = k;
-}
-
-int query(const int *f, const int &n, int x){
-    int ans=0;
-    for(; x <= n; x += x & -x) {
-//        cout << x << " " << n << endl;
-        if (ans<f[x]) ans=f[x];
-    }
-    return ans;
-}
-
 int attempt(string sa, string sb){
     clock_t start;
     start = clock();
-    /*
-    if (find_substring(sa, sb) == sb.length()) {
+
+    if (find_substring(sa, sb) != -1) {
 //        cout << sa<<endl <<sb<<endl;
-        double s_old_duration = ( clock() - start ) / (double) CLOCKS_PER_SEC;
-        old_duration += s_old_duration;
+        double s_new_duration = ( clock() - start ) / (double) CLOCKS_PER_SEC;
+        new_duration += s_new_duration;
         return sb.length();
     }
-      */
     string b = " " + sb;
     string _a = sa;
 
@@ -140,8 +126,7 @@ int attempt(string sa, string sb){
     int ans = 0;
     int cur_w = 0, m = 0;
     for(int i = 0; i < (int)_a.size(); i++){
-//        if (c == ' ' && a[m] == ' ') continue;
-        if (in_b[_a[i]]/* || i == (int)_a.size() - 1 */) {
+        if (in_b[_a[i]]) {
             w[++m] = cur_w;
             a[m] = _a[i];
             cur_w = 0;
@@ -150,13 +135,12 @@ int attempt(string sa, string sb){
             cur_w++;
         }
     }
-//    cout << "a: "; for (int i = 1; i <=m; i++) cout <<a[i]; cout<<endl;
-//    for (int i = 1; i <=m; i++) cout <<w[i] << " "; cout<<endl;
-//    cout << "b: " << b << endl;
-//    int fnw[(int)b.size()];
+
+    int dq[b.size()], end = -1, front = 0;
 
     for(int i = 1; i <= m; i++){
-//        memset(fnw, 0, sizeof(fnw));
+        end = -1;
+        front = 0;
         for(int j = 1; j < int(b.size()); j++){
             if (dp[i][j - 1] - 1 > dp[i-1][j] - w[i] - 1) {
                 dp[i][j] = dp[i][j - 1] - 1;
@@ -165,22 +149,17 @@ int attempt(string sa, string sb){
                 dp[i][j] = dp[i - 1][j] - w[i] - 1;
             }
 
-//            int cur = query(fnw, (int)b.size() - 1, max(1, j - 1 - w[i]));
-//            int tw = (a[i] == b[j]) ? 1 : -1;
-//            if (dp[i][j] < max(0, cur - w[i]) + tw) {
-//                dp[i][j] = max(0, cur - w[i]) + tw;
-//            }
-//             we need to query max(dp[i-1][j-1-w[i] to j-1]), can we do this faster?
-            for(int l = 0, min_ = min(w[i], j - 1); l <= min_; l++) {
-                int tw = (a[i] == b[j]) ? 1 : -1;
-                if (dp[i][j] < max(0, dp[i - 1][j - 1 - l] - w[i]) + tw){
-                    dp[i][j] = max(0, dp[i - 1][j - 1 - l] - w[i]) + tw;
-                }
+            while (front <= end && dp[i-1][dq[end]] < dp[i-1][j-1]) end--;
+            dq[++end] = j - 1;
+            while (front <= end && dq[front] < j - 1 - w[i]) front++;
+
+            int new_v = max(0, dp[i - 1][dq[front]] - w[i]) + ((a[i] == b[j]) ? 1 : -1);
+            if (dp[i][j] < new_v){
+                dp[i][j] = new_v;
             }
 
             if (dp[i][j] < 0) dp[i][j] = 0;
             if (ans < dp[i][j]) ans = dp[i][j];
-//            upd(fnw, j, dp[i-1][j]);
         }
     }
 
@@ -228,7 +207,6 @@ void full_test(){
     while (getline(fin, a)){
         getline(fin, b);
         b.erase(std::remove(b.begin(), b.end(), '^'), b.end());
-
 //        a = VnLangTool::lower_root(a);
 //        b = VnLangTool::lower_root(b);
 //        int x = old_leven(a, b);
@@ -238,7 +216,7 @@ void full_test(){
 //        assert(x == y);
         auto bs = VnLangTool::split_str(b, "|");
         for(auto s: bs) res1.push_back(old_leven(a, s));
-
+//        res1.push_back(old_leven(a,b));
     }
     fin.close();
     fin.open("test_1.txt");
@@ -250,7 +228,8 @@ void full_test(){
 //        b = VnLangTool::lower_root(b);
         auto bs = VnLangTool::split_str(b, "|");
         for(auto s: bs) res2.push_back(attempt(a, s));
-
+//        cout << a << endl << b << endl;
+//        res2.push_back(attempt(a,b));
     }
 
     assert(res1.size() == res2.size());
@@ -258,35 +237,21 @@ void full_test(){
         assert(res1[i] == res2[i]);
     cout << "Percentage: " << new_duration / old_duration * 100 <<  "%" << endl;
     cout << new_duration / res2.size() << " " << old_duration / res1.size() << endl;
+
 //    for(int i = 0; i < int(1e6); i++){
-//        a = gen_random(7);
-//        b = gen_random(7);
+//        a = gen_random(20);
+//        b = gen_random(6);
 //        cout << a << endl << b << endl;
 //        int ans1= attempt(a, b);
 //        int ans2 =  old_leven(a, b);
 //        cout << "???????" << ans1 << " " <<ans2<< endl;
 //        assert(ans1==ans2);
 //    }
-//
-/*
-    a = "ccdbdaecc";
-    b = "ccdcaaec";
-//    a="127 hiep binh hiep binh chanh thu duc hcm hiep binh chanh go vap ho chi minh ho chi minh";
-//    b="khu dan cu hiep binh chanh|kdc hiep binh chanh";
-    a = "1023 2 chung cu ngoc lam le van luong phuoc kieng phuoc kien nha be ho chi minh ho chi minh";
-    b = "toa nha chung cu goldora|chung cu goldora 26 le van luong|cc goldora 26 le van luong|chung cu goldora 26 le van luong";
-    cout << a << endl << b << endl;
-    int ans1= attempt(a, b);
-    int ans2 =  old_leven(a, b);
-    cout << "???????" << ans1 << " " <<ans2<< endl;
-    assert(ans1==ans2);
-*/
+
     cout << new_duration << " " << old_duration << endl;
 }
 int main() {
-//    full_test();
-    string a = "thach loi thanh xuan soc son ha noi";
-    string b = "thach loi thanh xuan soc son";
+    full_test();
 
     return 0;
 }

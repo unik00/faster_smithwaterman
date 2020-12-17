@@ -5,156 +5,14 @@
 #include <unistd.h>
 
 #include "lib/vn_lang_tool.hpp"
+#include "new.h"
+#include "old.h"
 
 using namespace std;
 
 const int N = 1005;
-int dp[N][N];
 double new_duration = 0;
 double old_duration = 0;
-
-int max(const int &a, const int &b){
-    return a > b ? a : b;
-}
-
-int min(const int &a, const int &b){
-    return a < b ? a : b;
-}
-
-int find_substring(string str, string pattern) {
-    // Step 0. Should not be empty string
-    if( str.size() == 0 || pattern.size() == 0)
-        return -1;
-
-    // Step 1. Compute failure function
-    int failure[pattern.size()];
-    std::fill( failure, failure+pattern.size(), -1);
-
-    for(int r=1, l=-1; r<pattern.size(); r++) {
-
-        while( l != -1 && pattern[l+1] != pattern[r])
-            l = failure[l];
-
-        // assert( l == -1 || pattern[l+1] == pattern[r]);
-        if( pattern[l+1] == pattern[r])
-            failure[r] = ++l;
-    }
-
-    // Step 2. Search pattern
-    int tail = -1;
-    for(int i=0; i<str.size(); i++) {
-
-        while( tail != -1 && str[i] != pattern[tail+1])
-            tail = failure[tail];
-
-        if( str[i] == pattern[tail+1])
-            tail++;
-
-        if( tail == pattern.size()-1)
-            return i - tail;
-    }
-
-    return -1;
-}
-
-int old_leven(string sa, string sb){
-    clock_t start;
-    start = clock();
-
-    string a = " " + sa;
-    string b = " " + sb;
-
-    // traditional smith waterman for benchmark
-    int ans = 0;
-     for(int i = 1; i < int(a.size()); i++){
-        for(int j = 1; j < int(b.size()); j++){
-            if (dp[i][j-1] > dp[i-1][j]){
-                dp[i][j] = dp[i][j - 1] - 1;
-            }
-            else dp[i][j] = dp[i - 1][j] - 1;
-            if (dp[i][j] < dp[i-1][j-1]-1) {
-                dp[i][j] = dp[i - 1][j - 1] - 1;
-            }
-            if (a[i] == b[j] && dp[i][j] <dp[i-1][j-1] + 1){
-                dp[i][j] = dp[i-1][j-1] + 1;
-            }
-            if (dp[i][j] < 0) dp[i][j] = 0;
-            if (ans < dp[i][j]) ans=dp[i][j];
-        }
-    }
-    for(int i = 0; i <= int(a.size()); i++) dp[i][0] = 0;
-    for(int j = 0; j < int(b.size()); j++) dp[0][j] = 0;
-    double s_old_duration = ( clock() - start ) / (double) CLOCKS_PER_SEC;
-    old_duration += s_old_duration;
-    return ans;
-}
-
-int w[N];
-bool in_b[int(1e6)];
-char a[N];
-
-int attempt(string sa, string sb){
-    clock_t start;
-    start = clock();
-
-    if (find_substring(sa, sb) != -1) {
-        double s_new_duration = ( clock() - start ) / (double) CLOCKS_PER_SEC;
-        new_duration += s_new_duration;
-        return sb.length();
-    }
-    string b = " " + sb;
-    string _a = sa;
-
-    for(int i = 1; i < (int)b.size(); i++) {
-        in_b[b[i]] = true;
-    }
-    int ans = 0;
-    int cur_w = 0, m = 0;
-    for(int i = 0; i < (int)_a.size(); i++){
-        if (in_b[_a[i]]) {
-            w[++m] = cur_w;
-            a[m] = _a[i];
-            cur_w = 0;
-        }
-        else {
-            cur_w++;
-        }
-    }
-
-    int dq[b.size()], end = -1, front = 0;
-
-    for(int i = 1; i <= m; i++){
-        end = -1;
-        front = 0;
-        for(int j = 1; j < int(b.size()); j++){
-            if (dp[i][j - 1] - 1 > dp[i-1][j] - w[i] - 1) {
-                dp[i][j] = dp[i][j - 1] - 1;
-            }
-            else {
-                dp[i][j] = dp[i - 1][j] - w[i] - 1;
-            }
-
-            while (front <= end && dp[i-1][dq[end]] < dp[i-1][j-1]) end--;
-            dq[++end] = j - 1;
-            while (front <= end && dq[front] < j - 1 - w[i]) front++;
-
-            int new_v = max(0, dp[i - 1][dq[front]] - w[i]) + ((a[i] == b[j]) ? 1 : -1);
-            if (dp[i][j] < new_v) dp[i][j] = new_v;
-            if (dp[i][j] < 0) dp[i][j] = 0;
-            if (ans < dp[i][j]) ans = dp[i][j];
-        }
-    }
-
-    // reset
-    for(int i = 1; i < (int)b.size(); i++) {
-        in_b[b[i]] = false;
-        w[i] = 0;
-    }
-    double s_new_duration = ( clock() - start ) / (double) CLOCKS_PER_SEC;
-    new_duration += s_new_duration;
-
-    return ans;
-}
 
 
 string gen_random(const int len) {
@@ -173,9 +31,9 @@ void random_test(){
         a = gen_random(100);
         b = gen_random(6);
         cout << a << endl << b << endl;
-        int ans1= attempt(a, b);
-        int ans2 =  old_leven(a, b);
-        cout << ans1 << " " << ans2 << endl;
+        Answer ans1 = NewLeven::execute(a, b);
+        Answer ans2 = OldLeven::execute(a, b);
+//        cout << ans1 << " " << ans2 << endl;
         assert(ans1==ans2);
     }
 }
@@ -185,14 +43,34 @@ void full_test(){
     string a, b;
 
     ifstream fin("test_1.txt");
-    vector<int> res1, res2;
+    vector<Answer> res1, res2;
 
     while (getline(fin, a)){
         getline(fin, b);
+//        a = VnLangTool::lower_root(a);
+//        b = VnLangTool::lower_root(b);
+
+//        cout << a << endl << b << endl;
         b.erase(std::remove(b.begin(), b.end(), '^'), b.end());
 
         auto bs = VnLangTool::split_str(b, "|");
-        for(auto s: bs) res1.push_back(old_leven(a, s));
+        for(auto s: bs) {
+            clock_t start = clock();
+            Answer tmp = OldLeven::execute(a, s);
+            double s_old_duration = ( clock() - start ) / (double) CLOCKS_PER_SEC;
+
+            //            if (tmp.score != NewLeven::execute(a, s).score){
+//                Answer new_l = NewLeven::execute(a, s);
+//                cout << "***\n";
+//                cout << a << endl << s << endl;
+//                cout << tmp.score << " " << new_l.score << endl;
+//                cout << tmp.first_substring.first << " " << tmp.first_substring.second<< endl;
+//                cout << new_l.first_substring.first << " " << new_l.first_substring.second<< endl;
+//                exit(0);
+//            }
+            res1.push_back(tmp);
+            old_duration += s_old_duration;
+        }
     }
     fin.close();
 
@@ -200,14 +78,23 @@ void full_test(){
     while (getline(fin, a)){
         getline(fin, b);
         b.erase(std::remove(b.begin(), b.end(), '^'), b.end());
-
         auto bs = VnLangTool::split_str(b, "|");
-        for(auto s: bs) res2.push_back(attempt(a, s));
+        for(auto s: bs) {
+            clock_t start = clock();
+            Answer tmp = NewLeven::execute(a, s);
+            double s_new_duration = ( clock() - start ) / (double) CLOCKS_PER_SEC;
+
+            res2.push_back(tmp);
+            new_duration += s_new_duration;
+
+        }
     }
 
     assert(res1.size() == res2.size());
-    for(int i = 0 ; i < (int)res1.size(); i++)
+    for(int i = 0 ; i < (int)res1.size(); i++) {
+//        cout << res1[i].score << " " << res2[i].score << endl;
         assert(res1[i] == res2[i]);
+    }
     cout << "Percentage: " << new_duration / old_duration * 100 <<  "%" << endl;
     cout << new_duration / res2.size() << " " << old_duration / res1.size() << endl;
 
@@ -216,6 +103,5 @@ void full_test(){
 }
 int main() {
     full_test();
-
     return 0;
 }
